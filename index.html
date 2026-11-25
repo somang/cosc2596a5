@@ -1,0 +1,628 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1024, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Fieldnote</title>
+<style>
+:root {
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  color: #202937;
+  background: #f6f7fb;
+  --muted: #a3adbd;
+  --line: #e2e7ef;
+  --blue: #244bc2;
+  --navy: #172657;
+  --amber: #f7bb55;
+}
+* { box-sizing: border-box; }
+*:focus, *:focus-visible { outline: none !important; box-shadow: none; }
+[hidden] { display: none !important; }
+html, body { margin: 0; min-width: 1024px; font-size: 14px; }
+body { overflow-x: auto; }
+.frame { width: 1136px; margin-inline: auto; }
+.header { background: #fff; border-bottom: 1px solid var(--line); }
+.header-row { height: 94px; display: grid; grid-template-columns: 175px 652px 1fr; gap: 29px; align-items: center; }
+.brand { width: fit-content; display: inline-flex; align-items: center; font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: -.075em; color: var(--navy); cursor: pointer; user-select: none; }
+.brand-period { color: #94601c; }
+.brand-mark { width: 34px; height: 34px; margin-right: 9px; display: inline-grid; place-items: center; background: var(--blue); border-radius: 10px; }
+.brand-mark::before { content: ""; width: 16px; height: 16px; border: 2px solid #fff; transform: rotate(45deg); border-radius: 3px 7px 3px 7px; box-shadow: inset 0 0 0 3px var(--blue), inset 0 0 0 8px var(--amber); }
+.edition { justify-self: end; font-size: 12px; font-weight: 650; color: #a9b3c4; white-space: nowrap; padding: 7px 11px; border: 1px solid var(--line); border-radius: 6px; }
+.search-wrap { position: relative; }
+.search-box { display: flex; align-items: center; gap: 12px; height: 49px; padding-left: 16px; border: 1px solid #e4e9f2; border-radius: 8px; background: #f8faff; }
+.search-icon { display: inline-block; position: relative; width: 13px; height: 13px; border: 1.75px solid currentColor; border-radius: 50%; }
+.search-icon::after { content: ""; position: absolute; height: 1.75px; width: 6px; bottom: -3px; right: -4px; transform: rotate(45deg); background: currentColor; border-radius: 2px; }
+.lead-icon { color: #a8b2c4; flex: none; }
+.query { flex: 1; min-width: 0; height: 100%; padding: 0 2px; border: none; color: #24324e; background: transparent; font: inherit; font-size: 15px; }
+.query::placeholder { color: #b9c2d1; }
+.clear-query { color: #c0c8d6; cursor: pointer; font-size: 18px; line-height: 1; width: 14px; text-align: center; user-select: none; }
+.search-submit { width: 46px; height: 43px; margin-right: 2px; border-radius: 6px; background: var(--blue); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.search-submit:hover { background: #1b3b9f; }
+.suggestions { position: absolute; z-index: 3; top: 55px; left: 0; right: 0; padding: 7px; background: #fff; border: 1px solid #e4e9f2; border-radius: 8px; box-shadow: 0 8px 30px #1b2c651c; }
+.suggestion { padding: 8px 13px; border-radius: 4px; cursor: pointer; color: #8f9bb0; }
+.suggestion:hover { background: #eef2ff; color: #24324e; }
+.toolbar { display: flex; justify-content: space-between; gap: 20px; padding-left: 204px; height: 43px; }
+.tab-row { display: flex; gap: 29px; }
+.category, .filters-toggle { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 600; cursor: pointer; color: #8f9bb0; white-space: nowrap; user-select: none; }
+.category.active { color: #5d78d6; }
+.category:hover, .filters-toggle:hover { color: #13255a; }
+.filters-wrap { position: relative; display: flex; align-items: center; }
+.filter-icon { display: inline-block; width: 15px; height: 11px; background: linear-gradient(90deg, currentColor 80%, transparent 80%) 0 0 / 100% 1px, linear-gradient(90deg, currentColor 55%, transparent 55%) 0 5px / 100% 1px, linear-gradient(90deg, currentColor 33%, transparent 33%) 0 10px / 100% 1px; background-repeat: no-repeat; }
+.filters-menu { position: absolute; top: 39px; right: 0; width: 180px; padding: 6px; z-index: 2; border: 1px solid var(--line); border-radius: 7px; background: #fff; box-shadow: 0 9px 28px #1b2c651a; }
+.filter-option { cursor: pointer; padding: 7px 11px; border-radius: 5px; font-size: 14px; color: #8f9bb0; user-select: none; }
+.filter-option.active { color: #5d78d6; }
+.filter-option:hover { background: #eef2ff; }
+.layout { padding-block: 30px 48px; display: grid; grid-template-columns: 758px 344px; gap: 34px; align-items: start; min-height: 68vh; }
+.results-label, .card-kicker { font-size: 11px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: #8d9cba; }
+.result-summary { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 13px; gap: 16px; }
+.result-count { font-size: 11px; color: var(--muted); }
+.result-list { border: 1px solid var(--line); background: #fff; border-radius: 11px; overflow: hidden; box-shadow: 0 2px 3px #20336907; }
+.result { padding: 17px 21px; border-bottom: 1px solid var(--line); }
+.result:last-child { border-bottom: none; }
+.result-meta { display: flex; gap: 8px; align-items: center; line-height: 1.25; }
+.result-icon { display: grid; place-items: center; flex: none; width: 25px; height: 25px; border-radius: 6px; background: #eaf0ff; color: #3e56a0; font-weight: 800; font-size: 12px; }
+.result-source { font-size: 12px; font-weight: 650; color: #8a94a9; }
+.result-path { color: var(--muted); font-weight: 400; margin-left: 2px; font-size: 10px; }
+.result-title { display: inline-block; margin: 5px 0 2px; color: var(--blue); font-size: 19px; line-height: 1.3; font-weight: 675; cursor: pointer; }
+.result-title:hover { text-decoration: underline; }
+.result-description { margin: 2px 0 6px; font-size: 14px; line-height: 20px; height: 40px; overflow: hidden; color: #7a869d; }
+.result-detail { font-size: 10px; color: var(--muted); height: 14px; overflow: hidden; }
+.dot { display: inline-block; position: relative; margin-right: 5px; width: 8px; height: 8px; border-radius: 50%; vertical-align: 0; }
+.free { background: #a0b84b; }
+.paid { background: #d79a4a; }
+.dot .tip { display: none; position: absolute; left: 12px; top: -6px; padding: 2px 6px; font-size: 10px; color: #fff; background: #3a465f; border-radius: 3px; white-space: nowrap; font-style: normal; }
+.dot:hover .tip { display: block; }
+.paging { display: flex; gap: 4px; margin-top: 16px; }
+.page-num { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 3px; font-size: 11px; background: #fff; color: #a3adbd; cursor: pointer; user-select: none; }
+.page-num.current { color: #5d78d6; }
+.place-card, .related-card { border: 1px solid var(--line); border-radius: 11px; overflow: hidden; background: #fff; box-shadow: 0 2px 3px #20336907; }
+.sidebar > * + * { margin-top: 14px; }
+.card-body { padding: 17px 19px; }
+.card-title { margin: 3px 0 4px; font-weight: 735; font-size: 24px; line-height: 1.14; color: var(--navy); letter-spacing: -.03em; }
+.card-subtitle { font-size: 13px; color: #8a94a9; }
+.map { position: relative; height: 175px; overflow: hidden; background: repeating-linear-gradient(24deg, #e6eddd 0 34px, #eaf0e4 34px 73px, #e2eadc 73px 105px); }
+.map .road { position: absolute; width: 125%; height: 17px; background: #fafaf4; border: 1px solid #dce3d5; }
+.map .road-one { left: -12%; top: 48px; transform: rotate(-13deg); }
+.map .road-two { left: -8%; top: 112px; transform: rotate(10deg); }
+.map .road-three { left: -12%; top: 82px; transform: rotate(-66deg); }
+.map .building { position: absolute; width: 41px; height: 25px; background: #d1ddcf; border-radius: 4px; border: 1px solid #c7d4c4; }
+.map .b1 { left: 34px; top: 73px; transform: rotate(-12deg); }
+.map .b2 { right: 51px; top: 92px; transform: rotate(10deg); }
+.map .b3 { right: 76px; top: 18px; transform: rotate(-12deg); }
+.map .b4 { right: 20px; bottom: 13px; transform: rotate(10deg); }
+.map-label { position: absolute; color: #9db09a; font-size: 9px; font-weight: 700; }
+.map-label.l1 { left: 12px; top: 12px; }
+.map-label.l2 { left: 20px; bottom: 14px; }
+.marker { position: absolute; display: block; width: 19px; height: 19px; border: 3px solid #fff; border-radius: 50% 50% 50% 2px; transform: rotate(-45deg); box-shadow: 0 1px 5px #2637525c; }
+.map-legend { font-size: 10px; color: var(--muted); margin-top: 12px; display: flex; flex-wrap: wrap; gap: 11px; }
+.card-link { display: inline-block; color: #5d78d6; font-size: 12px; font-weight: 655; margin-top: 11px; cursor: pointer; }
+.card-link:hover { text-decoration: underline; }
+.related-card .card-title { font-size: 16px; }
+.related-link { display: block; color: #5d78d6; font-size: 14px; margin-top: 7px; cursor: pointer; }
+.related-link:hover { text-decoration: underline; }
+.empty, .detail, .home { background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 25px; }
+.detail { grid-column: 1 / -1; max-width: 760px; }
+.detail-title { color: var(--navy); font-size: 30px; font-weight: 700; letter-spacing: -.025em; line-height: 1.2; margin: 14px 0; }
+.detail-body, .empty-text, .home-text { line-height: 1.55; color: #7a869d; margin: 14px 0; }
+.detail .map { margin-top: 15px; border-radius: 8px; }
+.detail .card-link { margin: 0 0 12px; }
+.home { grid-column: 1 / -1; max-width: 720px; }
+.home .card-title { font-size: 30px; }
+.footer { border-top: 1px solid var(--line); padding-block: 16px 24px; font-size: 10px; color: #c0c8d6; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-row frame">
+    <div class="brand" id="brand"><span class="brand-mark"></span>fieldnote<span class="brand-period">.</span></div>
+    <div class="search-wrap" id="search-wrap">
+      <div class="search-box">
+        <span class="search-icon lead-icon"></span>
+        <input id="query" class="query" type="text" placeholder="Search" maxlength="120" autocomplete="off">
+        <span id="clear-query" class="clear-query">×</span>
+        <div class="search-submit" id="search-submit"><span class="search-icon"></span></div>
+      </div>
+      <div class="suggestions" id="suggestions" hidden></div>
+    </div>
+    <span class="edition">Campus index</span>
+  </div>
+  <div class="frame toolbar" id="toolbar">
+    <div class="tab-row" id="categories"></div>
+    <div class="filters-wrap">
+      <div class="filters-toggle" id="filters-toggle"><span class="filter-icon"></span><span id="filters-label">Filters</span></div>
+      <div class="filters-menu" id="filters-menu" hidden></div>
+    </div>
+  </div>
+</div>
+
+<div class="frame layout" id="page"></div>
+<div class="frame footer">Fieldnote Search · Fictional campus index · All entries are sample data</div>
+
+<script>
+"use strict";
+
+/* Marker colours used on map entries */
+const BLUE = "#4151ca", ORANGE = "#cf6641", GREEN = "#5b9a52", PURPLE = "#8a55c4";
+const NORTH_QUAD = [{ x: "47%", y: "27%", c: BLUE, label: "Repair stand" }, { x: "73%", y: "57%", c: ORANGE, label: "Bike parking" }];
+
+const entries = [
+  /* Cycling: guides */
+  { id: "bike-hub", type: "Guides", source: "Campus Cycle Hub", path: "cycling › repairs", title: "Campus bike repair and tune-ups",
+    snippet: "Find self-service tools, drop-in help, and beginner repair workshops around campus.",
+    body: "Borrow an Allen key, tire levers, or a floor pump at the Cycle Hub desk in the Student Centre. Drop-in repair help runs from 12:00 p.m. to 4:00 p.m. on weekdays. Basic tools are free to borrow.",
+    metadata: "Campus Services · Updated Nov 12", keywords: "bicycle flat tire parts toolkit", campus: true, free: true },
+  { id: "tool-loans", type: "Guides", source: "Student Centre", path: "services › tool loans", title: "Borrow bike repair tools at the Student Centre",
+    snippet: "Check what is in the campus tool kit and where you can pick it up for the afternoon.",
+    body: "Show a student card at the service desk to borrow a toolkit. The kit includes tire levers, metric hex keys, and a pump. Return it before the desk closes at 5:00 p.m.",
+    metadata: "Loan desk · Weekdays", keywords: "campus bicycle bike repair equipment", campus: true, free: true },
+  { id: "riverside", type: "Guides", source: "Riverside Cycles", path: "services › tune-ups", title: "Riverside bike repairs and tune-ups",
+    snippet: "Book a paid tune-up near campus or ask about the student rate for basic repairs.",
+    body: "Riverside Cycles is at 14 River Street. A basic tune-up starts at $45. Drop off your bike between 10:00 a.m. and 5:00 p.m. from Tuesday to Saturday.",
+    metadata: "River Street · Off campus", keywords: "campus bike bicycle repair shop", campus: false, free: false },
+  { id: "brake-guide", type: "Guides", source: "Campus Cycle Hub", path: "guides › brakes", title: "Check your bike brakes before a ride",
+    snippet: "A quick checklist for spotting worn pads, loose cables, and brake levers that need attention.",
+    body: "Before you ride, squeeze each brake lever and check that the brake engages. If the lever nearly touches the grip or a pad appears worn, ask a mechanic at the Cycle Hub.",
+    metadata: "Bike maintenance · Guide", keywords: "campus bike bicycle repair brakes", campus: true, free: true },
+  { id: "report-rack", type: "Guides", source: "Campus Facilities", path: "requests › cycling", title: "Report a damaged bike rack or pump",
+    snippet: "Tell Facilities about a repair station or bike rack that needs maintenance.",
+    body: "Contact the Facilities desk and specify the nearest building. The North Quad stand and East Gate racks have distinct location names.",
+    metadata: "Campus Services · Requests", keywords: "campus bike bicycle repair pump", campus: true, free: true },
+  { id: "bike-lock", type: "Guides", source: "Campus Security", path: "safety › cycling", title: "Lock your bike and register it with Campus Security",
+    snippet: "Learn which locks work best and how to register your bike's serial number for free.",
+    body: "Use a U-lock through the frame and the rear wheel. Register the serial number at the Campus Security office in Hartley Hall. Registration is free and takes about five minutes.",
+    metadata: "Hartley Hall · Weekdays", keywords: "campus bike bicycle lock theft parking", campus: true, free: true },
+  { id: "bike-rental", type: "Guides", source: "Campus Cycle Hub", path: "cycling › rentals", title: "Rent a campus bike by the term",
+    snippet: "Term rentals include a lock, lights, and one free tune-up at the Cycle Hub.",
+    body: "Term rentals cost $60 and include a lock, front and rear lights, and one free repair visit. Pick up the bike at the Cycle Hub desk with a student card.",
+    metadata: "Student Centre · Term rental", keywords: "campus bike bicycle rental hire", campus: true, free: false },
+  { id: "spoke-shop", type: "Guides", source: "Spoke & Chain", path: "shops › repairs", title: "Spoke & Chain same-day bike repair",
+    snippet: "A downtown shop with same-day flat tire repairs and a 10% student discount.",
+    body: "Spoke & Chain is at 220 King Street. Flat tire repair costs $18 and is usually ready the same day. Bring a student card for the discount.",
+    metadata: "King Street · Off campus", keywords: "bike bicycle repair shop flat tire downtown", campus: false, free: false },
+
+  /* Cycling: maps */
+  { id: "north-quad", type: "Maps", source: "Facilities Map", path: "campus › cycling", title: "North Quad bike repair stand map",
+    snippet: "See the North Quad repair stand and nearby bike parking on the campus map.",
+    body: "Use the map to distinguish the two cycling facilities in North Quad. The repair stand has a pump and tools for basic bike repairs.",
+    metadata: "North Quad · Open all day", keywords: "bicycle pump map location", campus: true, free: true,
+    map: { labels: ["NORTH QUAD", "COLLEGE WALK"], markers: NORTH_QUAD } },
+  { id: "east-gate", type: "Maps", source: "Facilities Map", path: "campus › entrances", title: "East Gate bike parking and bus stops",
+    snippet: "Find bike racks and bus stops at the east entrance to campus.",
+    body: "East Gate has covered racks just inside the entrance, near the bus shelter on Campus Road. The bike route continues south toward the Recreation Annex.",
+    metadata: "East Campus · Open all day", keywords: "campus bike bicycle parking map commute bus", campus: true, free: true,
+    map: { labels: ["EAST GATE", "CAMPUS ROAD"], markers: [{ x: "30%", y: "40%", c: ORANGE, label: "Bike racks" }, { x: "64%", y: "22%", c: GREEN, label: "Bus shelter" }] } },
+  { id: "south-lot", type: "Maps", source: "Facilities Map", path: "campus › cycling", title: "South Lot covered bike shelter map",
+    snippet: "Locate the covered bike shelter and the air pump beside the South Lot.",
+    body: "The covered shelter holds 60 bikes. The air pump is on the north wall of the shelter, next to the lighting post.",
+    metadata: "South Campus · Open all day", keywords: "campus bike bicycle parking pump shelter map", campus: true, free: true,
+    map: { labels: ["SOUTH LOT", "LAKE PATH"], markers: [{ x: "38%", y: "55%", c: ORANGE, label: "Bike shelter" }, { x: "44%", y: "30%", c: BLUE, label: "Air pump" }] } },
+
+  /* Cycling: events */
+  { id: "flat-tire", type: "Events", source: "Campus Cycle Hub", path: "events › workshops", title: "Fix a Flat Tire workshop",
+    snippet: "Bring your bike to a hands-on flat tire repair session at the Student Centre. Tools and practice tubes are provided.",
+    body: "The free workshop takes place on Nov 28 at 1:00 p.m. in the Student Centre, room 112. Learn how to remove a wheel, find a puncture, and patch an inner tube. Registration is available at the Cycle Hub desk.",
+    metadata: "Nov 28 · 1:00 p.m.", keywords: "campus bike bicycle repair class workshop", campus: true, free: true },
+  { id: "gear-clinic", type: "Events", source: "Student Union", path: "events › recreation", title: "Bike repair clinic for gears and chains",
+    snippet: "Learn to quiet a noisy chain, adjust gears, and leave with a smoother ride.",
+    body: "The clinic takes place on Dec 3 at 4:00 p.m. in the Recreation Annex. The registration fee is $8 and includes a small bottle of chain lubricant.",
+    metadata: "Dec 3 · 4:00 p.m.", keywords: "campus bike bicycle repair class workshop", campus: true, free: false },
+  { id: "winter-ride", type: "Events", source: "Ride Together", path: "events › maintenance", title: "Winter bike maintenance workshop",
+    snippet: "Learn how to clean and store a bike after riding in snow and road salt.",
+    body: "Bring a used rag and a bike light to the free session on Dec 8 at 2:00 p.m. at the Riverside Community Centre.",
+    metadata: "Dec 8 · 2:00 p.m.", keywords: "campus bike bicycle repair winter workshop", campus: false, free: true },
+  { id: "group-ride", type: "Events", source: "Campus Cycling Club", path: "events › rides", title: "Campus cycling club beginner ride",
+    snippet: "Join a short group ride from the Student Centre and get familiar with campus bike routes.",
+    body: "Meet on Dec 5 at 3:30 p.m. outside the Student Centre. Bring a bike and a helmet. Volunteers will explain the route before the free ride begins.",
+    metadata: "Dec 5 · 3:30 p.m.", keywords: "campus bike bicycle cycling beginner route", campus: true, free: true },
+  { id: "wheel-true", type: "Events", source: "Spoke & Chain", path: "events › classes", title: "Wheel truing and spoke repair class",
+    snippet: "A paid evening class on straightening a bent wheel and replacing a broken spoke.",
+    body: "The class runs on Dec 10 at 6:30 p.m. at Spoke & Chain, 220 King Street. The fee is $25 and includes a spoke key to take home.",
+    metadata: "Dec 10 · 6:30 p.m.", keywords: "bike bicycle repair class workshop wheel", campus: false, free: false },
+  { id: "bike-swap", type: "Events", source: "Campus Sustainability Office", path: "events › community", title: "Used bike swap and free safety check",
+    snippet: "Buy, sell, or trade a used bike. Volunteer mechanics check brakes and tires at no cost.",
+    body: "The swap runs on Dec 1 from 10:00 a.m. to 2:00 p.m. in the Student Centre atrium. Safety checks are free. Sellers should arrive before 9:30 a.m.",
+    metadata: "Dec 1 · 10:00 a.m.", keywords: "campus bike bicycle swap sale safety check", campus: true, free: true },
+  { id: "past-workshop", type: "Events", source: "Campus Cycle Hub", path: "events › archive", title: "Bike lights and visibility workshop (past event)",
+    snippet: "This session has ended. See upcoming Cycle Hub workshops for new dates.",
+    body: "This workshop took place on Nov 14 at 1:00 p.m. in the Student Centre, room 112. It has ended and registration is closed.",
+    metadata: "Nov 14 · Ended", keywords: "campus bike bicycle repair workshop lights", campus: true, free: true },
+
+  /* Library */
+  { id: "study-rooms", type: "Guides", source: "Campus Library", path: "library › study spaces", title: "Book a library study room",
+    snippet: "Find group study rooms and learn how to reserve a time.",
+    body: "Group rooms seat up to four people. Reserve a room at the main library desk or visit the library website during opening hours. Bookings are limited to two hours a day.",
+    metadata: "Library · Study spaces", keywords: "campus library quiet room reservation book", campus: true, free: true },
+  { id: "quiet-study", type: "Maps", source: "Facilities Map", path: "campus › library", title: "Library quiet study floor map",
+    snippet: "Find the quiet study area and the nearest elevator in the main library.",
+    body: "The quiet study area is on the third floor. The elevator is next to the main entrance.",
+    metadata: "Campus Library · Third floor", keywords: "campus library study rooms map quiet", campus: true, free: true,
+    map: { labels: ["THIRD FLOOR", "MAIN STAIRS"], markers: [{ x: "28%", y: "30%", c: PURPLE, label: "Quiet study" }, { x: "70%", y: "62%", c: BLUE, label: "Elevator" }] } },
+  { id: "library-hours", type: "Guides", source: "Campus Library", path: "library › hours", title: "Library hours during exams",
+    snippet: "The main library stays open until 2:00 a.m. from Dec 6 to Dec 20.",
+    body: "From Dec 6 to Dec 20 the main library opens at 7:00 a.m. and closes at 2:00 a.m. A student card is needed after 10:00 p.m.",
+    metadata: "Library · Exam season", keywords: "campus library hours exams open late study", campus: true, free: true },
+  { id: "citation-workshop", type: "Events", source: "Campus Library", path: "events › research", title: "Citation and reference manager workshop",
+    snippet: "Learn to collect sources and format citations with a free reference manager.",
+    body: "The workshop runs on Dec 2 at 11:00 a.m. in Library room 204. Bring a laptop. The session is free.",
+    metadata: "Dec 2 · 11:00 a.m.", keywords: "campus library research citation workshop", campus: true, free: true },
+  { id: "printing", type: "Guides", source: "Campus Library", path: "library › printing", title: "Print and scan at the library",
+    snippet: "Black and white prints cost 10 cents a page. Scanning to email is free.",
+    body: "Printers are on the first floor. Load money onto your student card at the self-service kiosk. Colour prints cost 50 cents a page.",
+    metadata: "Library · First floor", keywords: "campus library print scan copy", campus: true, free: false },
+  { id: "laptop-loan", type: "Guides", source: "Campus Library", path: "library › equipment", title: "Borrow a laptop or charger",
+    snippet: "Laptops and phone chargers can be borrowed for four hours at the main desk.",
+    body: "Show a student card at the main desk. Laptops are loaned for four hours and must stay in the library. Late returns pause borrowing for one week.",
+    metadata: "Library · Main desk", keywords: "campus library laptop charger loan equipment", campus: true, free: true },
+
+  /* Transit */
+  { id: "bus-pass", type: "Guides", source: "Campus Transit", path: "transit › passes", title: "Activate your student bus pass",
+    snippet: "Learn where to pick up your transit pass and load it onto your student card.",
+    body: "Bring your student card to the Transit desk in the Student Centre. The desk is open from 9:00 a.m. to 5:00 p.m. on weekdays. The term pass costs $95.",
+    metadata: "Student Centre · Weekdays", keywords: "campus bus transit student pass", campus: true, free: false },
+  { id: "commuter-session", type: "Events", source: "Campus Transit", path: "events › commuting", title: "Getting to campus by bus",
+    snippet: "Find out which routes serve campus and how to read the transit timetable.",
+    body: "This free orientation runs on Dec 4 at noon in the Student Centre lobby. Bring any questions about buses, transfers, or the student pass.",
+    metadata: "Dec 4 · 12:00 p.m.", keywords: "campus student bus transit workshop", campus: true, free: true },
+  { id: "bus-stops", type: "Maps", source: "Facilities Map", path: "campus › transit", title: "Campus bus stops map",
+    snippet: "See the three campus bus stops and which routes stop at each one.",
+    body: "Routes 4 and 12 stop at East Gate. Route 7 stops at the Library loop. The night bus stops at the Student Centre after 11:00 p.m.",
+    metadata: "Campus wide · Updated Nov 3", keywords: "campus bus transit stops map routes", campus: true, free: true,
+    map: { labels: ["LIBRARY LOOP", "CAMPUS ROAD"], markers: [{ x: "22%", y: "35%", c: GREEN, label: "Route 7" }, { x: "58%", y: "20%", c: ORANGE, label: "Routes 4 and 12" }, { x: "78%", y: "64%", c: PURPLE, label: "Night bus" }] } },
+  { id: "night-shuttle", type: "Guides", source: "Campus Security", path: "safety › shuttle", title: "Night safety shuttle",
+    snippet: "A free shuttle runs from the library to residences every 20 minutes after dark.",
+    body: "The shuttle runs from 6:00 p.m. to 1:00 a.m. Board at the Library loop. Show a student card to the driver.",
+    metadata: "Library loop · Evenings", keywords: "campus bus shuttle night safety transit", campus: true, free: true },
+
+  /* Food */
+  { id: "dining-hours", type: "Guides", source: "Campus Dining", path: "dining › hours", title: "Dining hall hours and meal plans",
+    snippet: "Check opening hours for the three dining halls and compare meal plan prices.",
+    body: "Commons Hall is open from 7:30 a.m. to 8:00 p.m. Meal plans start at $1,450 a term. Day visitors can pay $12 at the door.",
+    metadata: "Campus Dining · Updated Nov 1", keywords: "campus dining food meal plan hall cafeteria", campus: true, free: false },
+  { id: "food-bank", type: "Guides", source: "Student Union", path: "services › food", title: "Campus food bank",
+    snippet: "Pick up free groceries with a student card. No sign-up is needed.",
+    body: "The food bank is in the Student Centre basement, room B12. It is open Tuesday and Thursday from 1:00 p.m. to 6:00 p.m.",
+    metadata: "Student Centre · Tue and Thu", keywords: "campus food bank free groceries", campus: true, free: true },
+  { id: "dining-map", type: "Maps", source: "Facilities Map", path: "campus › dining", title: "Places to eat on campus map",
+    snippet: "Find the dining halls, cafés, and microwave stations on campus.",
+    body: "Commons Hall is beside North Quad. The Library café is on the first floor. Microwave stations are in the Student Centre.",
+    metadata: "Campus wide · Open daily", keywords: "campus dining food cafe map microwave", campus: true, free: true,
+    map: { labels: ["NORTH QUAD", "COLLEGE WALK"], markers: [{ x: "20%", y: "48%", c: ORANGE, label: "Commons Hall" }, { x: "52%", y: "24%", c: GREEN, label: "Library café" }, { x: "75%", y: "66%", c: BLUE, label: "Microwaves" }] } },
+  { id: "cooking-class", type: "Events", source: "Campus Dining", path: "events › food", title: "Cooking on a budget class",
+    snippet: "Cook three cheap meals in one hour with a campus chef.",
+    body: "The class runs on Dec 6 at 5:00 p.m. in the Commons Hall teaching kitchen. The fee is $5 and covers ingredients.",
+    metadata: "Dec 6 · 5:00 p.m.", keywords: "campus food cooking class workshop budget", campus: true, free: false },
+
+  /* Health and wellness */
+  { id: "health-clinic", type: "Guides", source: "Student Health", path: "health › clinic", title: "Book an appointment at Student Health",
+    snippet: "See a nurse or doctor on campus. Same-day appointments open at 8:30 a.m.",
+    body: "Student Health is in Hartley Hall, second floor. Call the front desk or visit in person to book. Appointments are free with student health coverage.",
+    metadata: "Hartley Hall · Weekdays", keywords: "campus health clinic doctor nurse appointment", campus: true, free: true },
+  { id: "flu-clinic", type: "Events", source: "Student Health", path: "events › health", title: "Free flu shot clinic",
+    snippet: "Get a free flu shot on campus. Walk in with a student card.",
+    body: "The clinic runs on Nov 30 from 10:00 a.m. to 3:00 p.m. in the Recreation Annex. No appointment is needed.",
+    metadata: "Nov 30 · 10:00 a.m.", keywords: "campus health flu shot vaccine clinic", campus: true, free: true },
+  { id: "gym-hours", type: "Guides", source: "Recreation Annex", path: "recreation › gym", title: "Gym and pool hours",
+    snippet: "The gym opens at 6:00 a.m. on weekdays. Pool lanes can be booked online.",
+    body: "The gym is open from 6:00 a.m. to 11:00 p.m. on weekdays and from 8:00 a.m. to 8:00 p.m. on weekends. Access is included in student fees.",
+    metadata: "Recreation Annex · Daily", keywords: "campus gym pool recreation fitness hours", campus: true, free: true },
+  { id: "yoga", type: "Events", source: "Recreation Annex", path: "events › fitness", title: "Exam stress yoga drop-in",
+    snippet: "A gentle one-hour yoga class for all levels during exam season.",
+    body: "Drop in on Dec 9 at 7:00 p.m. in Studio B of the Recreation Annex. Mats are provided. The class is free.",
+    metadata: "Dec 9 · 7:00 p.m.", keywords: "campus yoga fitness wellness exam stress", campus: true, free: true },
+
+  /* Housing and admin */
+  { id: "residence-laundry", type: "Guides", source: "Residence Life", path: "housing › laundry", title: "Residence laundry rooms",
+    snippet: "Each residence has a laundry room. A wash costs $2.25 on your student card.",
+    body: "Laundry rooms are in each residence basement and are open all day. Report a broken machine at the residence front desk.",
+    metadata: "Residences · Open all day", keywords: "campus residence housing laundry", campus: true, free: false },
+  { id: "id-card", type: "Guides", source: "Registrar", path: "services › student card", title: "Replace a lost student card",
+    snippet: "Order a new student card at the Registrar. A replacement costs $20.",
+    body: "Visit the Registrar in Hartley Hall with photo ID. Replacement cards are printed while you wait. The fee is $20.",
+    metadata: "Hartley Hall · Weekdays", keywords: "campus student card id lost replace registrar", campus: true, free: false },
+  { id: "lost-found", type: "Guides", source: "Campus Security", path: "safety › lost and found", title: "Lost and found",
+    snippet: "Check the lost and found for keys, bottles, phones, and bike lights.",
+    body: "Lost items are kept at the Campus Security office in Hartley Hall for 30 days. Bring photo ID to collect an item.",
+    metadata: "Hartley Hall · Daily", keywords: "campus lost found keys phone security", campus: true, free: true },
+  { id: "career-fair", type: "Events", source: "Career Centre", path: "events › careers", title: "Winter career fair",
+    snippet: "Meet 40 employers hiring for co-op and summer jobs.",
+    body: "The fair runs on Dec 2 from 10:00 a.m. to 3:00 p.m. in the Student Centre atrium. Bring printed copies of your resume.",
+    metadata: "Dec 2 · 10:00 a.m.", keywords: "campus career fair jobs co-op employers", campus: true, free: true },
+  { id: "parking-permit", type: "Guides", source: "Parking Services", path: "transit › parking", title: "Buy a car parking permit",
+    snippet: "Term permits for the South Lot cost $180. Daily passes are sold at the gate.",
+    body: "Buy a term permit at Parking Services in Hartley Hall. Daily passes cost $9 at the South Lot pay station.",
+    metadata: "South Lot · Term permit", keywords: "campus car parking permit lot", campus: true, free: false },
+];
+
+const categoryNames = ["All", "Maps", "Events", "Guides"];
+const filterNames = { all: "Any result", free: "Free only", campus: "On campus" };
+const suggestions = ["campus bike repair", "bike repair workshop", "bike parking", "bike rental", "library study rooms", "library hours",
+  "student bus pass", "bus stops", "dining hall hours", "food bank", "flu shot", "gym hours", "lost student card", "career fair"];
+const relatedByTopic = [
+  { test: /bike|bicycle|cycling/i, terms: ["bike repair workshop", "bike parking", "campus bike repair", "bike rental"] },
+  { test: /library|study|print|laptop/i, terms: ["library study rooms", "library hours", "laptop loan"] },
+  { test: /bus|transit|shuttle|parking/i, terms: ["student bus pass", "bus stops", "night shuttle"] },
+  { test: /food|dining|meal|cook/i, terms: ["dining hall hours", "food bank", "cooking class"] },
+  { test: /health|flu|gym|yoga/i, terms: ["flu shot", "gym hours", "student health"] },
+];
+const defaultRelated = ["campus bike repair", "library study rooms", "student bus pass"];
+const defaultQuery = "campus bike repair";
+const pageSize = 5;
+
+const $ = id => document.getElementById(id);
+const make = (tag, className, text) => {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text) node.textContent = text;
+  return node;
+};
+const queryField = $("query");
+const suggestionsMenu = $("suggestions");
+const filtersMenu = $("filters-menu");
+const pageContent = $("page");
+
+function route(overrides = {}, base = state) {
+  const next = { ...base, ...overrides };
+  if (next.home) return "#home=1";
+  const params = new URLSearchParams();
+  params.set("q", next.query);
+  if (next.category !== "All") params.set("type", next.category);
+  if (next.filter !== "all") params.set("filter", next.filter);
+  if (next.page > 1) params.set("page", next.page);
+  if (next.item) params.set("item", next.item);
+  return "#" + params.toString();
+}
+
+function readRoute() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  return {
+    home: params.get("home") === "1",
+    query: (params.get("q") ?? defaultQuery).trim().slice(0, 120),
+    category: categoryNames.includes(params.get("type")) ? params.get("type") : "All",
+    filter: Object.prototype.hasOwnProperty.call(filterNames, params.get("filter")) ? params.get("filter") : "all",
+    page: Math.max(1, Number.parseInt(params.get("page"), 10) || 1),
+    item: params.get("item") || "",
+  };
+}
+
+let state = readRoute();
+
+/* Every control is a plain element with a click handler */
+function clickable(text, className, onClick) {
+  const node = make("div", className, text);
+  node.addEventListener("click", onClick);
+  return node;
+}
+const go = hash => { window.location.hash = hash; };
+const goQuery = term => go(route({ home: false, query: term, category: "All", filter: "all", page: 1, item: "" }));
+
+function search(term) {
+  const query = term.trim();
+  queryField.value = query;
+  suggestionsMenu.hidden = true;
+  const destination = route({ home: !query, query, category: "All", filter: "all", page: 1, item: "" });
+  if (window.location.hash === destination) render();
+  else go(destination);
+}
+
+$("brand").addEventListener("click", () => go("#home=1"));
+$("search-submit").addEventListener("click", () => search(queryField.value));
+queryField.addEventListener("input", () => {
+  const term = queryField.value.trim().toLowerCase();
+  const matches = term ? suggestions.filter(option => option.includes(term) && option !== term).slice(0, 6) : [];
+  suggestionsMenu.replaceChildren();
+  for (const value of matches) suggestionsMenu.append(clickable(value, "suggestion", () => search(value)));
+  suggestionsMenu.hidden = !matches.length;
+});
+$("clear-query").addEventListener("click", () => {
+  queryField.value = "";
+  suggestionsMenu.hidden = true;
+});
+$("filters-toggle").addEventListener("click", () => { filtersMenu.hidden = !filtersMenu.hidden; });
+document.addEventListener("click", event => {
+  if (!$("search-wrap").contains(event.target)) suggestionsMenu.hidden = true;
+  if (!event.target.closest(".filters-wrap")) filtersMenu.hidden = true;
+});
+
+function rank(query) {
+  const words = (query.toLowerCase().match(/[\p{L}\p{N}]+/gu) || []).filter(word => word.length > 1);
+  if (!words.length) return [];
+  const results = [];
+  for (const entry of entries) {
+    const haystack = [entry.title, entry.snippet, entry.keywords, entry.source].join(" ").toLowerCase();
+    const matched = words.filter(word => haystack.includes(word));
+    if (matched.length < Math.ceil(words.length * 0.67)) continue;
+    const exact = entry.title.toLowerCase().includes(query.toLowerCase()) ? 12 : 0;
+    const titleHits = matched.filter(word => entry.title.toLowerCase().includes(word)).length;
+    results.push({ entry, score: exact + matched.length * 4 + titleHits * 2 });
+  }
+  return results.sort((a, b) => b.score - a.score).map(match => match.entry);
+}
+
+function renderControls() {
+  const categories = $("categories");
+  categories.replaceChildren();
+  for (const category of categoryNames) {
+    categories.append(clickable(category, "category" + (state.category === category ? " active" : ""),
+      () => go(route({ category, page: 1 }))));
+  }
+  filtersMenu.replaceChildren();
+  for (const [value, description] of Object.entries(filterNames)) {
+    filtersMenu.append(clickable(description, "filter-option" + (state.filter === value ? " active" : ""), () => {
+      filtersMenu.hidden = true;
+      go(route({ filter: value, page: 1 }));
+    }));
+  }
+  $("filters-label").textContent = "Filters";
+}
+
+function campusMap(map) {
+  const node = make("div", "map");
+  for (const type of ["road road-one", "road road-two", "road road-three", "building b1", "building b2", "building b3", "building b4"]) {
+    node.append(make("span", type));
+  }
+  node.append(make("span", "map-label l1", map.labels[0]), make("span", "map-label l2", map.labels[1]));
+  for (const marker of map.markers) {
+    const pin = make("span", "marker");
+    pin.style.left = marker.x;
+    pin.style.top = marker.y;
+    pin.style.background = marker.c;
+    node.append(pin);
+  }
+  return node;
+}
+
+function mapLegend(map) {
+  const legend = make("div", "map-legend");
+  for (const marker of map.markers) {
+    const key = make("span");
+    const dot = make("i", "dot");
+    dot.style.background = marker.c;
+    key.append(dot, document.createTextNode(marker.label));
+    legend.append(key);
+  }
+  return legend;
+}
+
+function renderSidebar() {
+  const sidebar = make("div", "sidebar");
+  const bikeSearch = /bike|bicycle|cycling/i.test(state.query);
+  if (bikeSearch) {
+    const quad = entries.find(entry => entry.id === "north-quad");
+    const place = make("div", "place-card");
+    const details = make("div", "card-body");
+    details.append(
+      make("div", "card-kicker", "Campus map"),
+      make("div", "card-title", "North Quad"),
+      make("div", "card-subtitle", "Cycling facilities"),
+      mapLegend(quad.map),
+      clickable("Click here", "card-link", () => go(route({ item: "north-quad" }))),
+    );
+    place.append(campusMap(quad.map), details);
+    sidebar.append(place);
+  }
+  const topic = relatedByTopic.find(group => group.test.test(state.query));
+  const related = make("div", "related-card");
+  const details = make("div", "card-body");
+  details.append(make("div", "card-title", "Related searches"));
+  for (const term of (topic ? topic.terms : defaultRelated)) {
+    if (term !== state.query.toLowerCase()) details.append(clickable(term, "related-link", () => goQuery(term)));
+  }
+  related.append(details);
+  sidebar.append(related);
+  return sidebar;
+}
+
+function renderResult(entry) {
+  const result = make("div", "result");
+  const meta = make("div", "result-meta");
+  const icon = make("span", "result-icon", entry.source[0]);
+  const source = make("div", "result-source", entry.source);
+  source.append(make("span", "result-path", " › " + entry.path));
+  meta.append(icon, source);
+
+  const detail = make("div", "result-detail");
+  if (entry.type === "Events") {
+    const dot = make("i", "dot " + (entry.free ? "free" : "paid"));
+    dot.append(make("i", "tip", entry.free ? "Free" : "Paid"));
+    detail.append(dot);
+  }
+  detail.append(document.createTextNode(entry.metadata));
+  result.append(
+    meta,
+    clickable(entry.title, "result-title", () => go(route({ item: entry.id }))),
+    make("div", "result-description", entry.snippet),
+    detail,
+  );
+  return result;
+}
+
+function displayResults() {
+  const results = rank(state.query).filter(entry => {
+    const categoryMatches = state.category === "All" || entry.type === state.category;
+    const filterMatches = state.filter === "all" || (state.filter === "free" && entry.free) || (state.filter === "campus" && entry.campus);
+    return categoryMatches && filterMatches;
+  });
+
+  const container = make("div", "results");
+  const summary = make("div", "result-summary");
+  summary.append(make("div", "results-label", "Results"), make("div", "result-count", String(results.length)));
+  container.append(summary);
+  if (!results.length) {
+    const empty = make("div", "empty");
+    empty.append(
+      make("div", "card-title", "Nothing here"),
+      make("div", "empty-text", "Try again."),
+      clickable("Click here", "card-link", () => goQuery(defaultQuery)),
+    );
+    container.append(empty);
+  } else {
+    const pages = Math.ceil(results.length / pageSize);
+    const activePage = Math.min(state.page, pages);
+    const start = (activePage - 1) * pageSize;
+    const list = make("div", "result-list");
+    for (const result of results.slice(start, start + pageSize)) list.append(renderResult(result));
+    container.append(list);
+    if (pages > 1) {
+      const paging = make("div", "paging");
+      for (let number = 1; number <= pages; number++) {
+        paging.append(clickable(String(number), "page-num" + (number === activePage ? " current" : ""), () => go(route({ page: number }))));
+      }
+      container.append(paging);
+    }
+  }
+  pageContent.append(container, renderSidebar());
+}
+
+function displayDetail(entry) {
+  const detail = make("div", "detail");
+  detail.append(
+    clickable("‹ Back", "card-link", () => go(route({ item: "" }))),
+    make("div", "card-kicker", entry.source),
+    make("div", "detail-title", entry.title),
+    make("div", "detail-body", entry.body),
+  );
+  if (entry.map) detail.append(campusMap(entry.map), mapLegend(entry.map));
+  pageContent.append(detail);
+}
+
+function render(updateQuery = false) {
+  const previous = state;
+  state = readRoute();
+  if (updateQuery || previous.query !== state.query || previous.home !== state.home) {
+    queryField.value = state.home ? "" : state.query;
+  }
+  suggestionsMenu.hidden = true;
+  filtersMenu.hidden = true;
+  $("toolbar").hidden = state.home || Boolean(state.item);
+  pageContent.replaceChildren();
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+
+  if (state.home) {
+    const home = make("div", "home");
+    home.append(make("div", "card-title", "Search the campus index"), make("div", "home-text", "Look up campus services, events, maps, and guides."));
+    const terms = make("div", "related-card card-body");
+    for (const term of suggestions.slice(0, 5)) terms.append(clickable(term, "related-link", () => goQuery(term)));
+    home.append(terms);
+    pageContent.append(home);
+    return;
+  }
+
+  const item = entries.find(entry => entry.id === state.item);
+  if (item) {
+    displayDetail(item);
+  } else {
+    $("toolbar").hidden = false;
+    renderControls();
+    displayResults();
+  }
+}
+
+window.addEventListener("hashchange", () => {
+  render();
+  window.scrollTo(0, 0);
+});
+
+render(true);
+</script>
+</body>
+</html>
